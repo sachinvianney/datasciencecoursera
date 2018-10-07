@@ -1,0 +1,131 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "A. Sachin Vianney"
+date: "October 7, 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+# Executive Summary
+Three different Machine learning algorithm are applied to the training set and is used to predict using the test set with varied accuracies.We can infer from the analysis that Random Forest is the best model and is applied to the test set.
+
+We first need to include all the essential libraries/packages
+```{r}
+library(ggplot2)
+library(rattle)
+library(caret)
+library(rpart)
+library(randomForest)
+```
+
+Initailly, we need to download the test and training datasets from the URLs given to us. We set our working directory and proceed with the download followed by reading of the datasets.
+
+```{r}
+#INPUTTING THE DATA
+
+training <- 
+read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pmltraining.csv"),header=TRUE) test <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pmltesting.csv"),header=TRUE) 
+
+```
+
+Displaying the raw uncleaned data
+
+```{r}
+#DISPLAYING THE RAW DATA
+
+str(training)
+
+```
+
+As we can see, there are a lot of NA values, we need to clean this data in order to make our analysis easier and more meaningful
+```{r}
+#DATA CLEANING
+
+na_count <- sapply(test, function(y) sum((is.na(y))))
+na <- na_count[na_count == 20]
+good <- names(na)
+training <- training[,!(names(training) %in% good)]
+test <- test[,!(names(test) %in% good)]
+good2 <- c('user_name','raw_timestamp_part_1', 'raw_timestamp_part_2', 'cvtd_timestamp', 'new_window', 'num_window', 'X')
+training <- training[,!(names(training) %in% good2)]
+test <- test[,!(names(test) %in% good2)]
+
+```
+
+Displaying the clean data, we can see a reduction in the number of rows
+
+```{r}
+#DISPLAYING THE CLEAN DATA
+
+str(training)
+
+```
+
+# Machine Learning Algorithms
+
+For this analysis, we will be using three algorithmic approaches
+The Three algorithms applied are:
+1)Decision Tree
+2)Random Forest
+3)Generalized Boosted Regression
+
+```{r}
+#MACHINE LEARNING ALGORITHMS IMPLEMENTATION
+
+set.seed(49)
+part <- createDataPartition(training$classe, p = 0.75, list = FALSE)
+training1 <- training[part,]
+test1 <- training[-part,]
+
+```
+
+I have used the cross-validation technique in order to improve efficiency and limit overfitting.I have used 10 folds.
+
+```{r}
+tr_cont <- trainControl(method="cv", number=10)
+```
+
+# Descision Trees
+
+```{r}
+model1 <- train(classe~., data=training1, method="rpart", trControl=tr_cont)
+fancyRpartPlot(model1$finalModel)
+prediction1 <- predict(model1,newdata=test1)
+conf_mat1 <- confusionMatrix(test1$classe,prediction1)
+conf_mat1$table
+conf_mat1$overall[1]
+
+```
+
+# Random Forest
+
+```{r model2, echo=FALSE}
+model2 <- train(classe~., data=training1, method="rf",trControl=tr_cont,verbose = FALSE)
+print(model2)
+prediction2 <- predict(model2,newdata=test1)
+conf_mat2 <- confusionMatrix(test1$classe,prediction2)
+conf_mat2$table
+conf_mat2$overall[1]
+
+```
+
+# Generalized Boosted Regression
+
+```{r}
+model3 <- train(classe~., data=training1, method="gbm", trControl=tr_cont, verbose=FALSE)
+print(model3)
+prediction3 <- predict(model3,newdata=test1)
+conf_mat3 <- confusionMatrix(test1$classe,prediction3)
+conf_mat3$table
+conf_mat3$overall[1]
+
+```
+
+The Final Result/Prediction
+
+```{r model3, echo=FALSE}
+final <- predict(model2,newdata= test)
+final
+
+```
